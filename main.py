@@ -33,13 +33,14 @@ async def chat(message: ChatMessage):
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful AI meal assistant. Your job is to help users make healthy meal choices and provide detailed cooking instructions. Format your responses with clear headings (using #), bullet points for ingredients, and numbered steps for cooking instructions. Use emojis 🥗🍳🥑 to make responses engaging. Always include:\n1. Brief description of the dish\n2. List of ingredients with measurements\n3. Step-by-step cooking instructions\n4. Nutritional tips and benefits"
+                    "content": "You are a helpful meal AI assistant. You must respond ONLY with a JSON object containing recipe instructions. The JSON must include: id (kebab-case), name (title case), calories (number), image (Unsplash URL), and content (array of strings with numbered steps and ingredients). Do not include any text outside the JSON response."
                 },
                 {
                     "role": "user", 
                     "content": message.message
                 }
-            ]
+            ],
+            temperature=0.7
         )
         
         return {"response": completion.choices[0].message.content}
