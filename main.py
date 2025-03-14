@@ -17,10 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Initialize OpenAI client
+# Initialize OpenAI client without proxies
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY"),
-    base_url="https://api.openai.com/v1"
+    api_key=os.getenv("OPENAI_API_KEY")
 )
 
 class ChatMessage(BaseModel):
