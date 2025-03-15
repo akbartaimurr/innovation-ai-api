@@ -5,13 +5,12 @@ import os, base64
 from dotenv import load_dotenv
 from openai import OpenAI
 from google import genai
-from google.genai import types
 
 load_dotenv()
 
 # Initialize clients
 openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 app = FastAPI()
 
@@ -23,45 +22,22 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+class ChatMessage(BaseModel):
+    message: str
+
 async def generate_food_image(prompt: str) -> str:
     try:
-        model = "gemini-2.0-flash-exp-image-generation"
-        contents = [
-            types.Content(
-                role="user",
-                parts=[types.Part.from_text(text=f"generate me a scrumptious image of {prompt} with a restaurant background")],
-            ),
-        ]
-        
-        generate_content_config = types.GenerateContentConfig(
-            temperature=1,
-            top_p=0.95,
-            top_k=40,
-            max_output_tokens=8192,
-            response_modalities=["image"],
-            response_mime_type="text/plain",
+        model = genai.GenerativeModel('gemini-pro-vision')
+        response = model.generate_image(
+            prompt=f"Professional food photography of {prompt}, healthy meal, overhead view on a restaurant table, high quality, 4k"
         )
-
-        response = gemini_client.models.generate_content(
-            model=model,
-            contents=contents,
-            config=generate_content_config,
-        )
-
-        if response.candidates[0].content.parts[0].inline_data:
-            # Convert binary image to base64
-            image_data = response.candidates[0].content.parts[0].inline_data.data
-            base64_image = base64.b64encode(image_data).decode('utf-8')
-            return f"data:image/jpeg;base64,{base64_image}"
         
+        if response.image:
+            return response.image.url
         raise HTTPException(status_code=500, detail="No image generated")
-
     except Exception as e:
         print(f"Error generating image: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
-
-class ChatMessage(BaseModel):
-    message: str
 
 @app.post("/api/chat")
 async def chat(message: ChatMessage):
@@ -84,13 +60,14 @@ async def chat(message: ChatMessage):
         
         recipe_json = completion.choices[0].message.content
         
-        # Generate image
+        # Generate image with Gemini
         image_url = await generate_food_image(message.message)
         
         # Insert generated image URL into recipe JSON
         recipe_json = recipe_json.replace('"image": ""', f'"image": "{image_url}"')
         
         return {"response": recipe_json}
+
     except Exception as e:
         print(f"Error in chat endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
