@@ -5,8 +5,6 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 import httpx
-import time
-import asyncio
 
 load_dotenv()
 
@@ -57,17 +55,17 @@ class ImageGenRequest(BaseModel):
 @app.post("/api/generate-image")
 async def generate_image(request: ImageGenRequest):
     try:
-        # Create the image generation request
         async with httpx.AsyncClient() as client:
-            create_response = await client.post(
-                "https://api.starryai.com/api/v1/create",
+            response = await client.post(
+                "https://api.starryai.com/creations/",
                 json={
-                    "prompt": request.prompt,
-                    "height": 512,
-                    "width": 512,
-                    "cfg_scale": 7.5,
-                    "seed": None,
-                    "samples": 1
+                    "model": "lyra",
+                    "aspectRatio": "square",
+                    "highResolution": False,
+                    "images": 1,
+                    "steps": 20,
+                    "initialImageMode": "color",
+                    "prompt": request.prompt
                 },
                 headers={
                     "accept": "application/json",
@@ -76,38 +74,10 @@ async def generate_image(request: ImageGenRequest):
                 }
             )
             
-            if create_response.status_code != 200:
-                raise HTTPException(status_code=create_response.status_code, detail=create_response.text)
-            
-            creation_id = create_response.json().get('id')
-            
-            # Poll for the result
-            max_attempts = 30
-            attempt = 0
-            while attempt < max_attempts:
-                status_response = await client.get(
-                    f"https://api.starryai.com/api/v1/generations/{creation_id}",
-                    headers={
-                        "accept": "application/json",
-                        "authorization": f"Bearer {os.getenv('STARRYAI_API_KEY')}"
-                    }
-                )
+            if response.status_code != 200:
+                raise HTTPException(status_code=response.status_code, detail=response.text)
                 
-                if status_response.status_code == 200:
-                    status_data = status_response.json()
-                    if status_data.get('status') == 'succeeded':
-                        return {
-                            "imageUrl": status_data['images'][0]['url'],
-                            "status": "success"
-                        }
-                    elif status_data.get('status') == 'failed':
-                        raise HTTPException(status_code=500, detail="Image generation failed")
-                
-                attempt += 1
-                await asyncio.sleep(2)  # Wait 2 seconds between checks
-            
-            raise HTTPException(status_code=408, detail="Image generation timed out")
-                
+            return response.json()
     except Exception as e:
         print(f"Error generating image: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
