@@ -33,7 +33,7 @@ async def chat(message: ChatMessage):
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful meal AI assistant. You must respond ONLY with a JSON object containing recipe instructions. The JSON must include: id (kebab-case), name (title case), calories (number), image (use random Unsplash food URL), and content (array of strings with numbered steps and ingredients). Do not include any text outside the JSON response."
+                    "content": "You are a helpful meal AI assistant. You must respond ONLY with a JSON object containing recipe instructions. The JSON must include: id (kebab-case), name (title case), calories (number), image (use 'https://source.unsplash.com/featured/?healthy,food' as image URL), and content (array of strings with numbered steps and ingredients). Do not include any text outside the JSON response."
                 },
                 {
                     "role": "user", 
