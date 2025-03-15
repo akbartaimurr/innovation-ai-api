@@ -48,6 +48,30 @@ async def chat(message: ChatMessage):
         print(f"Error in chat endpoint: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+class ImageGenRequest(BaseModel):
+    prompt: str
+
+@app.post("/api/generate-image")
+async def generate_image(request: ImageGenRequest):
+    try:
+        response = client.images.generate(
+            model="dall-e-3",
+            prompt=request.prompt,
+            n=1,
+            size="1024x1024",
+            quality="standard",
+            style="natural"
+        )
+        
+        return {
+            "imageUrl": response.data[0].url,
+            "status": "success"
+        }
+                
+    except Exception as e:
+        print(f"Error generating image: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/health")
 async def health_check():
     return {"status": "healthy"}
