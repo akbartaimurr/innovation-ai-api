@@ -4,7 +4,6 @@ from pydantic import BaseModel
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
-import httpx
 
 load_dotenv()
 
@@ -47,39 +46,6 @@ async def chat(message: ChatMessage):
         return {"response": completion.choices[0].message.content}
     except Exception as e:
         print(f"Error in chat endpoint: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-
-class ImageGenRequest(BaseModel):
-    prompt: str
-
-@app.post("/api/generate-image")
-async def generate_image(request: ImageGenRequest):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://api.starryai.com/creations/",
-                json={
-                    "model": "lyra",
-                    "aspectRatio": "square",
-                    "highResolution": False,
-                    "images": 1,
-                    "steps": 20,
-                    "initialImageMode": "color",
-                    "prompt": request.prompt
-                },
-                headers={
-                    "accept": "application/json",
-                    "content-type": "application/json",
-                    "authorization": f"Bearer {os.getenv('STARRYAI_API_KEY')}"
-                }
-            )
-            
-            if response.status_code != 200:
-                raise HTTPException(status_code=response.status_code, detail=response.text)
-                
-            return response.json()
-    except Exception as e:
-        print(f"Error generating image: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/health")
